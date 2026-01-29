@@ -1,6 +1,6 @@
 """Unit tests for request signing."""
 
-from alibaba_cli.signing import build_signed_params, calculate_signature
+from alibaba_api.signing import build_signed_params, calculate_signature
 
 
 class TestCalculateSignature:

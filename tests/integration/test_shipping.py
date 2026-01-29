@@ -1,19 +1,23 @@
-"""Integration tests for shipping endpoints."""
+"""Integration tests for shipping API using high-level methods."""
 
 import pytest
 
-from alibaba_cli.client import AlibabaClient
-from alibaba_cli.config import Config
+from alibaba_api import AlibabaClient, Config
+from alibaba_api.exceptions import AlibabaAPIError
 
 
 def _parse_use_sandbox(use_sandbox_raw: str) -> bool:
     """Parse use_sandbox string to boolean."""
-    return isinstance(use_sandbox_raw, str) and use_sandbox_raw.lower() in ("1", "true", "yes")
+    return isinstance(use_sandbox_raw, str) and use_sandbox_raw.lower() in (
+        "1",
+        "true",
+        "yes",
+    )
 
 
 @pytest.mark.integration
-class TestShippingEndpoints:
-    """Integration tests for freight calculation endpoints."""
+class TestShippingAPI:
+    """Integration tests for freight calculation using high-level API methods."""
 
     @pytest.fixture(autouse=True)
     def setup(self, test_credentials: dict[str, str]) -> None:
@@ -38,27 +42,29 @@ class TestShippingEndpoints:
         """Sample product ID for testing."""
         return "1601206892606"
 
-    def test_basic_freight_calculation(
+    def test_calculate_freight_basic(
         self, client: AlibabaClient, sample_product_id: str
     ) -> None:
         """Test basic freight cost calculation."""
-        response = client.get(
-            "/shipping/freight/calculate",
-            {
-                "product_id": sample_product_id,
-                "quantity": "10",
-                "destination_country": "US",
-                "zip_code": "90001",
-                "dispatch_location": "CN",
-            },
+        result = client.calculate_freight(
+            product_id=sample_product_id,
+            quantity=10,
+            destination_country="US",
+            zip_code="90001",
+            dispatch_location="CN",
         )
 
         # Validate response structure
-        assert response.get("code") == "0"
-        assert "value" in response
+        assert "product_id" in result
+        assert "quantity" in result
+        assert "destination" in result
+        assert "dispatch_location" in result
+        assert "options" in result
+        assert result["product_id"] == sample_product_id
+        assert result["quantity"] == 10
 
         # Validate shipping options structure
-        options = response.get("value", [])
+        options = result.get("options", [])
         if options:
             option = options[0]
             # Expected fields from documentation
@@ -72,14 +78,39 @@ class TestShippingEndpoints:
                 assert "amount" in fee
                 assert "currency" in fee
 
-    def test_advanced_freight_calculation(
+    def test_calculate_freight_with_fallback(self, client: AlibabaClient) -> None:
+        """Test freight calculation with automatic fallback."""
+        # Test fallback from CN to US to MX
+        result = client.calculate_freight(
+            product_id="1601206892606",
+            quantity=1,
+            destination_country="US",
+            dispatch_location="CN",
+            fallback=True,
+        )
+
+        # Validate response structure
+        assert "options" in result
+        assert "fallback_used" in result
+        assert isinstance(result["fallback_used"], bool)
+
+    def test_calculate_freight_no_fallback(self, client: AlibabaClient) -> None:
+        """Test freight calculation with fallback disabled."""
+        result = client.calculate_freight(
+            product_id="1601206892606",
+            quantity=1,
+            destination_country="US",
+            dispatch_location="CN",
+            fallback=False,
+        )
+
+        # With fallback disabled, should only try CN
+        assert result["fallback_used"] is False
+
+    def test_calculate_freight_advanced(
         self, client: AlibabaClient, sample_product_id: str
     ) -> None:
         """Test advanced freight calculation with multiple products."""
-        import json
-
-        from alibaba_cli.exceptions import AlibabaAPIError
-
         address = {
             "zip": "10012",
             "country": {"code": "US", "name": "United States"},
@@ -93,18 +124,16 @@ class TestShippingEndpoints:
         # Note: This may fail with invalid e_company_id or sku_id
         # The test validates the API accepts the request format and returns proper error
         try:
-            response = client.get(
-                "/order/freight/calculate",
-                {
-                    "e_company_id": "test_company_id",
-                    "destination_country": "US",
-                    "dispatch_location": "CN",
-                    "address": json.dumps(address),
-                    "logistics_product_list": json.dumps(products),
-                },
+            result = client.calculate_freight_advanced(
+                e_company_id="test_company_id",
+                destination_country="US",
+                dispatch_location="CN",
+                address=address,
+                logistics_product_list=products,
             )
             # If we get a successful response, validate structure
-            assert response is not None
+            assert "options" in result
+
         except AlibabaAPIError as e:
             # Expected: API may return error for invalid test data
             # Common errors: 4015 (seller cannot ship to country), 4016 (freight template error)
@@ -112,22 +141,15 @@ class TestShippingEndpoints:
 
     def test_empty_response_handling(self, client: AlibabaClient) -> None:
         """Test handling of empty shipping responses (no available routes)."""
-        from alibaba_cli.exceptions import AlibabaAPIError
-
         # Use an unlikely combination to potentially get no routes
-        try:
-            response = client.get(
-                "/shipping/freight/calculate",
-                {
-                    "product_id": "1",  # Invalid product
-                    "quantity": "1",
-                    "destination_country": "US",
-                    "dispatch_location": "CN",
-                },
-            )
-            # If successful, validate structure
-            options = response.get("value", [])
-            assert isinstance(options, list)
-        except AlibabaAPIError as e:
-            # Expected: Invalid product may return freight template error
-            assert e.code == "4016", f"Unexpected error code: {e.code}"
+        result = client.calculate_freight(
+            product_id="1",  # Invalid product
+            quantity=1,
+            destination_country="US",
+            dispatch_location="CN",
+            fallback=False,
+        )
+
+        # Should still return a valid result structure
+        assert "options" in result
+        assert isinstance(result["options"], list)

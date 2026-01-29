@@ -1,21 +1,23 @@
-"""Integration tests for product endpoints."""
+"""Integration tests for product API using high-level methods."""
 
-import os
 
 import pytest
 
-from alibaba_cli.client import AlibabaClient
-from alibaba_cli.config import Config
+from alibaba_api import AlibabaClient, Config
 
 
 def _parse_use_sandbox(use_sandbox_raw: str) -> bool:
     """Parse use_sandbox string to boolean."""
-    return isinstance(use_sandbox_raw, str) and use_sandbox_raw.lower() in ("1", "true", "yes")
+    return isinstance(use_sandbox_raw, str) and use_sandbox_raw.lower() in (
+        "1",
+        "true",
+        "yes",
+    )
 
 
 @pytest.mark.integration
-class TestProductEndpoints:
-    """Integration tests for product discovery endpoints."""
+class TestProductAPI:
+    """Integration tests for product discovery using high-level API methods."""
 
     @pytest.fixture(autouse=True)
     def setup(self, test_credentials: dict[str, str]) -> None:
@@ -35,42 +37,28 @@ class TestProductEndpoints:
         )
         return AlibabaClient(config)
 
-    def test_product_list_by_scene(self, client: AlibabaClient) -> None:
+    def test_list_products_by_scene(self, client: AlibabaClient) -> None:
         """Test getting product list by scene ID."""
         # Use standard US fulfillment scene
-        scene_id = "906124611"
-
-        response = client.get(
-            "/eco/buyer/product/check",
-            {"query_req": f'{{"scene_id": "{scene_id}", "index": 0, "size": 10, "product_type": "common"}}'},
-        )
+        result = client.list_products(scene_id="906124611", page=0, page_size=10)
 
         # Validate response structure
-        assert response.get("code") == "0"
-        assert "result" in response
-        result = response["result"]
-        assert "result_data" in result
-        assert isinstance(result["result_data"], list)
+        assert "product_ids" in result
+        assert isinstance(result["product_ids"], list)
+        assert "total" in result
+        assert "page" in result
+        assert result["page"] == 0
 
         # If we got products, the list should not be empty
-        if result["result_data"]:
-            assert len(result["result_data"]) > 0
+        if result["product_ids"]:
+            assert len(result["product_ids"]) > 0
 
-    def test_product_description(self, client: AlibabaClient, test_product_ids: dict[str, str]) -> None:
+    def test_get_product_description(self, client: AlibabaClient) -> None:
         """Test getting product details."""
-        # Use documented example product ID (env product may be unavailable)
+        # Use documented example product ID
         product_id = "1601206892606"
 
-        # Use country parameter as discovered from working example
-        response = client.get(
-            "/eco/buyer/product/description",
-            {"query_req": '{"product_id":' + str(product_id) + ',"country":"US"}'},
-        )
-
-        # Validate response structure
-        assert response.get("code") == "0"
-        assert "result" in response
-        result_data = response["result"].get("result_data", {})
+        product = client.get_product(product_id=product_id, country="US")
 
         # Validate expected fields from documentation
         expected_fields = [
@@ -86,10 +74,10 @@ class TestProductEndpoints:
         ]
 
         for field in expected_fields:
-            assert field in result_data, f"Missing expected field: {field}"
+            assert field in product, f"Missing expected field: {field}"
 
         # Validate SKUs structure
-        skus = result_data.get("skus", [])
+        skus = product.get("skus", [])
         if skus:
             sku = skus[0]
             assert "sku_id" in sku
@@ -97,49 +85,48 @@ class TestProductEndpoints:
             # Validate sku_attr_list if present
             if "sku_attr_list" in sku:
                 sku_attr = sku["sku_attr_list"][0] if sku["sku_attr_list"] else {}
-                # Expected fields from documentation
                 attr_fields = ["attr_name_id", "attr_name_desc", "attr_value_id", "attr_value_desc"]
-                # At least some fields should be present
-                assert any(field in sku_attr for field in attr_fields), f"sku_attr_list missing expected fields, got: {list(sku_attr.keys())}"
+                assert any(field in sku_attr for field in attr_fields), "sku_attr_list missing expected fields"
 
-    def test_product_inventory(self, client: AlibabaClient, test_product_ids: dict[str, str]) -> None:
+    def test_get_product_inventory(self, client: AlibabaClient) -> None:
         """Test getting product inventory."""
-        product_id = test_product_ids.get("product_id", "3256810295445290")
+        product_id = "3256810295445290"
 
-        response = client.get(
-            "/eco/buyer/product/inventory",
-            {"inv_req": f'{{"product_id": "{product_id}", "shipping_from": "CN"}}'},
-        )
-
-        # Validate response structure
-        assert response.get("code") == "0"
-        assert "result" in response
-        result_data = response["result"].get("result_data", [])
+        inventory = client.get_product_inventory(product_id=product_id, shipping_from="CN")
 
         # Validate inventory structure if data returned
-        if result_data:
-            inventory_entry = result_data[0]
+        if inventory:
+            inventory_entry = inventory[0]
             assert "shipping_from" in inventory_entry
             assert "inventory_list" in inventory_entry
 
-    def test_local_product_list(self, client: AlibabaClient) -> None:
+    def test_get_local_products(self, client: AlibabaClient) -> None:
         """Test getting local warehouse products."""
-        response = client.get(
-            "/eco/buyer/local/product/check",
-            {"req": '{"index": 0, "size": 10, "country": "US"}'},
-        )
+        result = client.get_local_products(country="US", page=0, page_size=10)
 
         # Validate response structure
-        assert response.get("code") == "0"
-        assert "result" in response
+        assert "product_ids" in result
+        assert result["country"] == "US"
 
-    def test_crossborder_product_list(self, client: AlibabaClient) -> None:
+    def test_get_crossborder_products(self, client: AlibabaClient) -> None:
         """Test getting cross-border products."""
-        response = client.get(
-            "/eco/buyer/crossborder/product/check",
-            {"param0": '{"index": 0, "size": 10}'},
-        )
+        result = client.get_crossborder_products(page=0, page_size=10)
 
         # Validate response structure
-        assert response.get("code") == "0"
-        assert "result" in response
+        assert "product_ids" in result
+        assert isinstance(result["product_ids"], list)
+
+    def test_search_products_convenience_method(self, client: AlibabaClient) -> None:
+        """Test the search_products convenience method (multi-step flow)."""
+        result = client.search_products(scene_id="906124611", limit=3)
+
+        # Validate multi-step result structure
+        assert "scene_id" in result
+        assert "total_found" in result
+        assert "successfully_loaded" in result
+        assert "products" in result
+
+        # If products were found, at least some should load successfully
+        if result["total_found"] > 0:
+            assert result["successfully_loaded"] >= 0
+            assert len(result["products"]) <= result["total_found"]

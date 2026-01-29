@@ -1,10 +1,6 @@
-# Alibaba API CLI
+# Alibaba API
 
-CLI tool and integration test suite for validating the [Alibaba.com Open Platform API v2](https://openapi.alibaba.com/doc/api.htm) documentation.
-
-## Purpose
-
-This tool exists to validate that the Alibaba API documentation at `/docs/alibaba-api-integration-v2.md` accurately reflects the actual API behavior. It implements all documented endpoints as CLI commands and includes an integration test suite.
+Python library for the [Alibaba.com Open Platform API v2](https://openapi.alibaba.com/doc/api.htm).
 
 ## Installation
 
@@ -13,182 +9,147 @@ This tool exists to validate that the Alibaba API documentation at `/docs/alibab
 git clone <repo-url>
 cd alibaba-v2-api
 
-# Install in development mode
-pip install -e ".[dev]"
+# Install with uv
+uv sync --all-groups
 
-# Verify installation
-alibaba-cli --version
+# Or with pip
+pip install -e ".[dev]"
 ```
 
 ## Quick Start
 
-### 1. Set Credentials
+```python
+from alibaba_api import AlibabaClient, Config
 
-```bash
-export ALIBABA_APP_KEY="your_app_key"
-export ALIBABA_APP_SECRET="your_app_secret"
+# Configure with credentials
+config = Config(
+    app_key="your_app_key",
+    app_secret="your_app_secret",
+    access_token="your_access_token",  # from OAuth flow
+    use_sandbox=True,  # or False for production
+)
+
+# Make API calls
+with AlibabaClient(config) as client:
+    # Get product details
+    product = client.get("/eco/buyer/product/description", {
+        "query_req": '{"product_id": "1601206892606", "country": "US"}'
+    })
+
+    # Calculate shipping
+    shipping = client.get("/shipping/freight/calculate", {
+        "product_id": "1601206892606",
+        "quantity": "10",
+        "destination_country": "US",
+        "zip_code": "90001",
+    })
+
+    # List orders
+    orders = client.get("/alibaba/order/list", {
+        "role": "buyer",
+        "start_page": "0",
+        "page_size": "10",
+    })
 ```
 
-### 2. Get OAuth Token
+## OAuth Flow
 
-First, visit the authorization URL in your browser:
+```python
+from alibaba_api import AlibabaClient, Config
 
-```
-https://openapi-auth.alibaba.com/oauth/authorize?response_type=code&client_id={app_key}&redirect_uri={callback_url}
-```
+config = Config(
+    app_key="your_app_key",
+    app_secret="your_app_secret",
+)
 
-Then exchange the code for a token:
+with AlibabaClient(config) as client:
+    # Exchange authorization code for tokens
+    tokens = client.get("/auth/token/create", {
+        "code": "oauth_authorization_code"
+    })
 
-```bash
-alibaba-cli auth token create --code "your_oauth_code"
-```
+    access_token = tokens["access_token"]
+    refresh_token = tokens["refresh_token"]
 
-Save the `access_token` and `refresh_token` for subsequent calls:
-
-```bash
-export ALIBABA_ACCESS_TOKEN="your_access_token"
-export ALIBABA_REFRESH_TOKEN="your_refresh_token"
-```
-
-### 3. Make API Calls
-
-```bash
-# List products
-alibaba-cli product list --scene-id 906124611 --page 0 --page-size 10
-
-# Get product details
-alibaba-cli product get --product-id 1601206892606
-
-# Calculate shipping
-alibaba-cli shipping calculate \
-  --product-id 1601206892606 \
-  --quantity 10 \
-  --destination-country US
+    # Refresh access token
+    new_tokens = client.get("/auth/token/refresh", {
+        "refresh_token": refresh_token
+    })
 ```
 
-## CLI Commands
+## Configuration
 
-### Authentication
+| Method | Description |
+|--------|-------------|
+| `Config(app_key, app_secret, ...)` | Create config programmatically |
+| `Config.from_env(**overrides)` | Load from environment variables |
 
-| Command | Description |
-|---------|-------------|
-| `auth token create --code <code>` | Exchange OAuth code for access token |
-| `auth token refresh --refresh-token <token>` | Refresh access token |
-| `auth status` | Check credential configuration |
+### Environment Variables
 
-### Products
-
-| Command | Description |
-|---------|-------------|
-| `product list --scene-id <id>` | Get product list by scene ID |
-| `product local --country <code>` | Get local warehouse products |
-| `product crossborder` | Get cross-border products |
-| `product get --product-id <id>` | Get product details |
-| `product inventory --product-id <id>` | Check inventory |
-
-### Shipping
-
-| Command | Description |
-|---------|-------------|
-| `shipping calculate` | Basic freight estimation |
-| `shipping calculate-advanced` | Multi-product freight calculation |
-
-### Orders
-
-| Command | Description |
-|---------|-------------|
-| `order create` | Create BuyNow order |
-| `order pay` | Pay for order |
-| `order list` | List orders |
-| `order get --trade-id <id>` | Get order details |
-| `order logistics --trade-id <id>` | Get logistics status |
-| `order tracking --trade-id <id>` | Get tracking events |
-
-## Global Options
-
-| Flag | Environment Variable | Description |
-|------|---------------------|-------------|
-| `--app-key` | `ALIBABA_APP_KEY` | Application key |
-| `--app-secret` | `ALIBABA_APP_SECRET` | Application secret |
-| `--access-token` | `ALIBABA_ACCESS_TOKEN` | OAuth access token |
-| `--refresh-token` | `ALIBABA_REFRESH_TOKEN` | OAuth refresh token |
-| `--sandbox` | `ALIBABA_USE_SANDBOX` | Use sandbox environment |
-| `--json` | - | Formatted JSON output (default) |
-| `--raw` | - | Raw API response |
-| `--verbose` | - | Debug output |
-
-## Running Integration Tests
-
-```bash
-# Set credentials
-export ALIBABA_APP_KEY="test_key"
-export ALIBABA_APP_SECRET="test_secret"
-export ALIBABA_ACCESS_TOKEN="test_token"
-
-# Run all integration tests
-pytest tests/integration/ -v -m integration
-
-# Run specific test file
-pytest tests/integration/test_auth.py -v
-```
-
-## Development
-
-```bash
-# Run linting
-ruff check src/
-ruff format src/
-
-# Run type checking
-mypy src/
-
-# Run unit tests
-pytest tests/ -v
-```
+| Variable | Description |
+|----------|-------------|
+| `ALIBABA_APP_KEY` | Application key (required) |
+| `ALIBABA_APP_SECRET` | Application secret (required) |
+| `ALIBABA_ACCESS_TOKEN` | OAuth access token |
+| `ALIBABA_REFRESH_TOKEN` | OAuth refresh token |
+| `ALIBABA_USE_SANDBOX` | Use sandbox environment (`true`/`false`) |
 
 ## Project Structure
 
 ```
 alibaba-v2-api/
-├── src/alibaba_cli/
-│   ├── __init__.py
-│   ├── cli.py              # Main entry point
-│   ├── client.py           # API client
-│   ├── signing.py          # Request signing
-│   ├── config.py           # Configuration
-│   ├── exceptions.py       # Exceptions
-│   ├── models/             # Pydantic models
-│   └── commands/           # CLI commands
+├── src/alibaba_api/
+│   ├── __init__.py        # Main exports
+│   ├── client.py          # AlibabaClient class
+│   ├── config.py          # Configuration
+│   ├── signing.py         # HMAC-SHA256 request signing
+│   ├── exceptions.py      # Custom exceptions
+│   └── models/            # Pydantic models
+│       ├── auth.py
+│       ├── product.py
+│       ├── order.py
+│       └── shipping.py
 ├── tests/
-│   ├── unit/               # Unit tests
-│   └── integration/        # Integration tests
-├── docs/
-│   └── alibaba-api-integration-v2.md
-├── specs/                  # PRD and stories
+│   ├── unit/              # Unit tests
+│   └── integration/       # Integration tests
 └── pyproject.toml
 ```
 
-## API Endpoints Implemented
+## Running Tests
 
-| # | Endpoint | CLI Command |
-|---|----------|-------------|
-| 1 | `/auth/token/create` | `auth token create` |
-| 2 | `/auth/token/refresh` | `auth token refresh` |
-| 3 | `/eco/buyer/product/check` | `product list` |
-| 4 | `/eco/buyer/local/product/check` | `product local` |
-| 5 | `/eco/buyer/localregular/product/check` | `product local-regular` |
-| 6 | `/eco/buyer/crossborder/product/check` | `product crossborder` |
-| 7 | `/eco/buyer/product/description` | `product get` |
-| 8 | `/eco/buyer/product/inventory` | `product inventory` |
-| 9 | `/shipping/freight/calculate` | `shipping calculate` |
-| 10 | `/order/freight/calculate` | `shipping calculate-advanced` |
-| 11 | `/buynow/order/create` | `order create` |
-| 12 | `/alibaba/dropshipping/order/pay` | `order pay` |
-| 13 | `/alibaba/order/list` | `order list` |
-| 14 | `/alibaba/order/get` | `order get` |
-| 15 | `/order/logistics/query` | `order logistics` |
-| 16 | `/order/logistics/tracking/get` | `order tracking` |
-| 17 | `/alibaba/order/fund/query` | `order fund` |
+```bash
+# Unit tests only
+pytest tests/unit/ -v
+
+# Integration tests (requires credentials)
+export ALIBABA_APP_KEY="your_key"
+export ALIBABA_APP_SECRET="your_secret"
+export ALIBABA_ACCESS_TOKEN="your_token"
+pytest tests/integration/ -v -m integration
+```
+
+## Development
+
+```bash
+# Lint
+uv run ruff check src/
+uv run ruff format src/
+
+# Type check
+uv run mypy src/
+
+# All tests
+uv run pytest -v
+```
+
+## API Endpoints Supported
+
+| Category | Endpoints |
+|----------|-----------|
+| **Auth** | `/auth/token/create`, `/auth/token/refresh` |
+| **Products** | `/eco/buyer/product/check`, `/eco/buyer/product/description`, `/eco/buyer/product/inventory`, `/eco/buyer/local/product/check`, `/eco/buyer/crossborder/product/check` |
+| **Shipping** | `/shipping/freight/calculate`, `/order/freight/calculate` |
+| **Orders** | `/alibaba/order/list`, `/alibaba/order/get`, `/buynow/order/create`, `/alibaba/dropshipping/order/pay`, `/order/logistics/query`, `/order/logistics/tracking/get`, `/alibaba/order/fund/query` |
 
 ## License
 

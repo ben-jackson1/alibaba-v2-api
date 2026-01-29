@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from alibaba_cli.client import AlibabaClient
-from alibaba_cli.config import Config
-from alibaba_cli.exceptions import (
+from alibaba_api.client import AlibabaClient
+from alibaba_api.config import Config
+from alibaba_api.exceptions import (
     AlibabaAPIError,
     AlibabaNetworkError,
     AlibabaValidationError,

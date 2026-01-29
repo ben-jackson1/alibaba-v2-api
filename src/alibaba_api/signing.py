@@ -1,7 +1,7 @@
 """
 HMAC-SHA256 request signing for Alibaba API.
 
-Reference: docs/alibaba-api-integration-v2.md#request-signing
+Reference: https://openapi.alibaba.com/doc/api.htm
 """
 
 import hashlib
@@ -34,9 +34,6 @@ def calculate_signature(api_path: str, params: dict[str, str], app_secret: str) 
         ...     "secret"
         ... )
         'A1B2C3D4E5F6...'
-
-    References:
-        https://openapi.alibaba.com/doc/api.htm
     """
     # 1. Sort parameters alphabetically by key (ASCII order)
     sorted_params = dict(sorted(params.items()))

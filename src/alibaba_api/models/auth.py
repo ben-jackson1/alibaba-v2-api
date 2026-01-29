@@ -7,7 +7,7 @@ class UserInfo(BaseModel):
     """User information from token response."""
 
     country: str
-    loginId: str = Field(alias="login_id")
+    login_id: str = Field(alias="loginId")
     user_id: str = Field(alias="user_id")
     seller_id: str | None = Field(default=None, alias="seller_id")
 
