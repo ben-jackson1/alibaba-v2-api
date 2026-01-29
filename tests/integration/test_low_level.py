@@ -102,7 +102,7 @@ class TestLowLevelAPI:
         """
         response = client.get(
             "/eco/buyer/product/check",
-            {"query_req": '{"scene_id": "906124611", "index": 0, "size": 1}'},
+            {"query_req": '{"scene_id": "906124611", "index": 0, "size": 5, "product_type": "common"}'},
         )
 
         # If signing wasn't applied, we'd get an authentication error

@@ -232,6 +232,7 @@ class ProductMethods:
             "page_size": limit,
             "size": limit,
             "index": 0,
+            "product_type": "common",
         }
 
         response = self._product_request(
@@ -258,7 +259,7 @@ class ProductMethods:
                     "/eco/buyer/product/description",
                     {
                         "query_req": json.dumps(
-                            {"product_id": str(product_id), "size": 10, "index": 0}
+                            {"product_id": int(product_id), "country": "US"}
                         )
                     },
                 )

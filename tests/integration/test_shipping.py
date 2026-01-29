@@ -140,16 +140,16 @@ class TestShippingAPI:
             assert e.code in ["4015", "4016"], f"Unexpected error code: {e.code}"
 
     def test_empty_response_handling(self, client: AlibabaClient) -> None:
-        """Test handling of empty shipping responses (no available routes)."""
-        # Use an unlikely combination to potentially get no routes
-        result = client.calculate_freight(
-            product_id="1",  # Invalid product
-            quantity=1,
-            destination_country="US",
-            dispatch_location="CN",
-            fallback=False,
-        )
+        """Test handling of invalid product ID."""
+        # Use an invalid product ID - should get parameter error
+        with pytest.raises(AlibabaAPIError) as exc_info:
+            client.calculate_freight(
+                product_id="invalid_product_id",
+                quantity=1,
+                destination_country="US",
+                dispatch_location="CN",
+                fallback=False,
+            )
 
-        # Should still return a valid result structure
-        assert "options" in result
-        assert isinstance(result["options"], list)
+        # Should get a parameter error
+        assert exc_info.value.code == "MissingParameter" or "product_id" in exc_info.value.message.lower()

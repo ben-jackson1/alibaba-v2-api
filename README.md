@@ -118,10 +118,14 @@ alibaba-v2-api/
 ## Running Tests
 
 ```bash
-# Unit tests only
+# Unit tests only (no credentials required)
 pytest tests/unit/ -v
 
 # Integration tests (requires credentials)
+source .env
+pytest tests/integration/ -v -m integration
+
+# Or set environment variables manually:
 export ALIBABA_APP_KEY="your_key"
 export ALIBABA_APP_SECRET="your_secret"
 export ALIBABA_ACCESS_TOKEN="your_token"
