@@ -386,8 +386,9 @@ response = make_api_request(
 | Field | Type | Description |
 |-------|------|-------------|
 | `scene_id` | String | Product list scene ID (see below) |
-| `page` | Integer | Page number (starting from 0) |
-| `page_size` | Integer | Items per page (max 100) |
+| `index` | Integer | Page number (0-based) |
+| `size` | Integer | Items per page (recommended: 20-50) |
+| `product_type` | String | Product type filter (use "common" for standard products) |
 
 **Available Scene IDs:**
 
@@ -404,8 +405,9 @@ response = make_api_request(
 ```python
 query_req = json.dumps({
     "scene_id": "906124611",
-    "page": 0,
-    "page_size": 50
+    "index": 0,
+    "size": 50,
+    "product_type": "common"
 })
 
 response = make_api_request(
@@ -449,15 +451,15 @@ response = make_api_request(
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `page` | Integer | Page number (starting from 0) |
-| `page_size` | Integer | Items per page |
+| `index` | Integer | Page number (0-based) |
+| `size` | Integer | Items per page (recommended: 20-50) |
 | `country` | String | Warehouse country code (e.g., "US", "MX") |
 
 **Example Request:**
 ```python
 req = json.dumps({
-    "page": 0,
-    "page_size": 50,
+    "index": 0,
+    "size": 50,
     "country": "US"
 })
 
@@ -502,8 +504,8 @@ response = make_api_request(
 **Example Request:**
 ```python
 req = json.dumps({
-    "page": 0,
-    "page_size": 50
+    "index": 0,
+    "size": 50
 })
 
 response = make_api_request(
@@ -532,8 +534,8 @@ response = make_api_request(
 **Example Request:**
 ```python
 param0 = json.dumps({
-    "page": 0,
-    "page_size": 50
+    "index": 0,
+    "size": 50
 })
 
 response = make_api_request(
@@ -579,10 +581,14 @@ response = make_api_request(
 | Field | Type | Description |
 |-------|------|-------------|
 | `product_id` | String | The Alibaba product ID |
+| `country` | String | Destination country code (required, e.g., "US", "GB") |
 
 **Example Request:**
 ```python
-query_req = json.dumps({"product_id": "1601206892606"})
+query_req = json.dumps({
+    "product_id": "1601206892606",
+    "country": "US"
+})
 
 response = make_api_request(
     api_path="/eco/buyer/product/description",
@@ -664,7 +670,7 @@ response = make_api_request(
 
 | Field | Description |
 |-------|-------------|
-| `eCompanyId` | Supplier ID (needed for shipping calculation) |
+| `eCompanyId` | Supplier ID (needed for `/order/freight/calculate`) |
 | `skus[].sku_id` | Variant ID (needed for order creation) |
 | `skus[].ladder_price` | Volume-based pricing tiers |
 
@@ -739,6 +745,8 @@ response = make_api_request(
 
 **Purpose:** Get estimated shipping costs for a single product (use during product browsing).
 
+> **Warning:** The `vendor_code` returned by this endpoint is NOT compatible with order creation. Use `/order/freight/calculate` for orders.
+
 **Request Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -799,6 +807,8 @@ response = make_api_request(
 
 **Purpose:** Get accurate shipping costs for multiple products (use before order creation).
 
+> **Critical:** This endpoint is required for order creation. The `vendor_code` returned here must be used as `carrier_code` in `/buynow/order/create`. Using `vendor_code` from `/shipping/freight/calculate` will cause error 4028.
+
 **Request Parameters:**
 
 | Parameter | Type | Required | Description |
@@ -826,7 +836,7 @@ response = make_api_request(
 
 ```json
 [
-  {"product_id": "1600191825486", "sku_id": "12321", "quantity": "1"}
+  {"product_id": "1600191825486", "sku_id": "12321", "quantity": "1", "country_code": "US"}
 ]
 ```
 
@@ -841,7 +851,7 @@ address = json.dumps({
 })
 
 logistics_product_list = json.dumps([
-    {"product_id": "1600191825486", "sku_id": "12321", "quantity": "1"}
+    {"product_id": "1600191825486", "sku_id": "12321", "quantity": "1", "country_code": "US"}
 ])
 
 response = make_api_request(
@@ -884,6 +894,24 @@ response = make_api_request(
 }
 ```
 
+> **Note:** Use `vendor_code` as `carrier_code` in `/buynow/order/create`
+      "shipping_type": "EXPRESS/MULTIMODAL_TRANSPORT",
+      "trade_term": "DAP",
+      "dispatch_country": "US",
+      "destination_country": "US",
+      "delivery_time": "3-9",
+      "solution_biz_type": "distributionWaybill",
+      "store_type": "CERTIFIED",
+      "fee": {
+        "amount": "3.0",
+        "currency": "USD"
+      }
+    }
+  ],
+  "request_id": "0ba2887315178178017221014"
+}
+```
+
 ---
 
 ### 8. Create BuyNow Order
@@ -891,6 +919,8 @@ response = make_api_request(
 **Endpoint:** `GET/POST /buynow/order/create`
 
 **Purpose:** Create a dropshipping order.
+
+> **Important:** The `carrier_code` parameter must come from the `/order/freight/calculate` endpoint (not `/shipping/freight/calculate`). Using the wrong freight endpoint will result in error code 4028 ("order vendor code not match").
 
 **Request Parameters:**
 
@@ -1408,6 +1438,9 @@ response = make_api_request(
 | `10005` | - | SKU Not Found | SKU may have been deleted |
 | `400007` | - | EPR Required | Seller needs valid EPR number for DE/FR |
 | `430013` | - | Order Amount Too Small | Minimum order amount is $0.30 |
+| `4016` | - | Freight Template Service Error | Invalid product or shipping configuration |
+| `4027` | - | Find SKU Cost Error | Quantity below minimum order quantity (MOQ) |
+| `4028` | - | Order Vendor Code Not Match | Must use vendor_code from `/order/freight/calculate` (not `/shipping/freight/calculate`) |
 
 ### Order Status Codes
 

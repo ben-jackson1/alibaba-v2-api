@@ -7,7 +7,7 @@
 | Epic | Project Setup & Core Infrastructure |
 | Priority | P0 |
 | Estimate | M |
-| Status | PENDING |
+| Status | DONE |
 | Blocked By | epic_01_setup/story_001 |
 | Blocks | epic_02_auth/story_005, epic_03_products/story_008, epic_04_shipping/story_013, epic_05_orders/story_017 |
 | Tracer Bullet | false |
@@ -22,15 +22,15 @@ Implement HMAC-SHA256 request signing according to Alibaba specification. This i
 
 ## Acceptance Criteria
 
-- [ ] AC1: Function `calculate_signature(api_path: str, params: dict, app_secret: str) -> str`
-- [ ] AC2: Parameters are sorted alphabetically (ASCII order) before concatenation
-- [ ] AC3: Concatenation format: key1value1key2value2... (no separators)
-- [ ] AC4: Message = api_path + concatenated_params
-- [ ] AC5: HMAC-SHA256 signature generated using app_secret
-- [ ] AC6: Signature returned as uppercase hex string
-- [ ] AC7: Unit tests verify signature matches documented examples
-- [ ] AC8: Edge case: empty params dict handled correctly
-- [ ] AC9: Edge case: special characters in values handled correctly
+- [x] AC1: Function `calculate_signature(api_path: str, params: dict, app_secret: str) -> str`
+- [x] AC2: Parameters are sorted alphabetically (ASCII order) before concatenation
+- [x] AC3: Concatenation format: key1value1key2value2... (no separators)
+- [x] AC4: Message = api_path + concatenated_params
+- [x] AC5: HMAC-SHA256 signature generated using app_secret
+- [x] AC6: Signature returned as uppercase hex string
+- [x] AC7: Unit tests verify signature matches documented examples
+- [x] AC8: Edge case: empty params dict handled correctly
+- [x] AC9: Edge case: special characters in values handled correctly
 
 ## Implementation Notes
 
@@ -54,3 +54,7 @@ def calculate_signature(api_path: str, params: dict, app_secret: str) -> str:
 - All unit tests pass
 - Signature matches test vectors (if available) or matches documentation
 - Code is typed and documented
+
+## Completion Notes
+
+All 16 signing-related unit tests pass in tests/unit/test_signing.py. Signature calculation verified with multiple test cases.

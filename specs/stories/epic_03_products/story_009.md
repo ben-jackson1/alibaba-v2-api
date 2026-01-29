@@ -7,7 +7,7 @@
 | Epic | Product Discovery Endpoints |
 | Priority | P0 |
 | Estimate | M |
-| Status | PENDING |
+| Status | DONE |
 | Blocked By | epic_03_products/story_008 |
 | Blocks | None |
 | Tracer Bullet | false |
@@ -22,14 +22,14 @@ Implement `/eco/buyer/product/description` to retrieve full product details incl
 
 ## Acceptance Criteria
 
-- [ ] AC1: CLI command: `alibaba-cli product get --product-id <id>`
-- [ ] AC2: API endpoint: `/eco/buyer/product/description`
-- [ ] AC3: Requires access_token
-- [ ] AC4: Request param: `query_req` as JSON with product_id
-- [ ] AC5: Response validated for: product_id, title, images, skus[], currency, min_order_quantity
-- [ ] AC6: Each SKU validated for: sku_id, ladder_price[], sku_attr_list[]
-- [ ] AC7: Integration test with real product ID
-- [ ] AC8: Large response pretty-printed for readability
+- [x] AC1: CLI command: `alibaba-cli product get --product-id <id>`
+- [x] AC2: API endpoint: `/eco/buyer/product/description`
+- [x] AC3: Requires access_token
+- [x] AC4: Request param: `query_req` as JSON with product_id
+- [x] AC5: Response validated for: product_id, title, images, skus[], currency, min_order_quantity
+- [x] AC6: Each SKU validated for: sku_id, ladder_price[], sku_attr_list[]
+- [x] AC7: Integration test with real product ID
+- [x] AC8: Large response pretty-printed for readability
 
 ## Implementation Notes
 
@@ -44,3 +44,7 @@ Key response fields to validate:
 - Full product details retrieved
 - All documented fields present in response
 - Integration test passes
+
+## Completion Notes
+
+Product get endpoint fully implemented. Requires `country` parameter (API difference documented). Integration test passes with documented product ID.

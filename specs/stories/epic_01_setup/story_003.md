@@ -7,7 +7,7 @@
 | Epic | Project Setup & Core Infrastructure |
 | Priority | P0 |
 | Estimate | M |
-| Status | PENDING |
+| Status | DONE |
 | Blocked By | epic_01_setup/story_002 |
 | Blocks | epic_02_auth/story_005, epic_03_products/story_008, epic_04_shipping/story_013, epic_05_orders/story_017 |
 | Tracer Bullet | false |
@@ -22,15 +22,15 @@ Create a base API client class that encapsulates request signing, HTTP calls, an
 
 ## Acceptance Criteria
 
-- [ ] AC1: `AlibabaClient` class with app_key, app_secret, access_token optional params
-- [ ] AC2: `use_sandbox` param to toggle base URL
-- [ ] AC3: `_request()` method that handles signing, HTTP call, and response parsing
-- [ ] AC4: System params (app_key, sign_method, timestamp) added automatically
-- [ ] AC5: access_token added to params when provided
-- [ ] AC6: Supports both GET and POST methods
-- [ ] AC7: Returns parsed JSON response or raises exception on error
-- [ ] AC8: Unit tests with mocked HTTP responses
-- [ ] AC9: Error response format: code, message, request_id extracted
+- [x] AC1: `AlibabaClient` class with app_key, app_secret, access_token optional params
+- [x] AC2: `use_sandbox` param to toggle base URL
+- [x] AC3: `_request()` method that handles signing, HTTP call, and response parsing
+- [x] AC4: System params (app_key, sign_method, timestamp) added automatically
+- [x] AC5: access_token added to params when provided
+- [x] AC6: Supports both GET and POST methods
+- [x] AC7: Returns parsed JSON response or raises exception on error
+- [x] AC8: Unit tests with mocked HTTP responses
+- [x] AC9: Error response format: code, message, request_id extracted
 
 ## Implementation Notes
 
@@ -50,3 +50,7 @@ System params:
 - Client makes properly signed requests
 - Error responses are parsed correctly
 - Tests cover both success and error cases
+
+## Completion Notes
+
+AlibabaClient fully implemented in src/alibaba_cli/client.py. All 13 client unit tests pass. Supports GET/POST, automatic signing, error handling.
