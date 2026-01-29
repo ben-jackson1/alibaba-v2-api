@@ -63,7 +63,6 @@ class AlibabaClient(OrderMethods, ProductMethods, ShippingMethods, AuthMethods):
         self._client = httpx.Client(timeout=config.timeout)
 
     def _build_url(self, api_path: str) -> str:
-        """Build full URL for an API endpoint."""
         return f"{self.config.base_url}{api_path}"
 
     def _parse_response(self, response: httpx.Response) -> dict[str, Any]:
@@ -80,13 +79,11 @@ class AlibabaClient(OrderMethods, ProductMethods, ShippingMethods, AuthMethods):
             AlibabaNetworkError: For HTTP errors
             AlibabaAPIError: For API error responses
         """
-        # Try to parse JSON regardless of status code
         try:
             data: dict[str, Any] | str = response.json()
         except ValueError:
             data = response.text
 
-        # Check for HTTP errors
         if response.status_code >= 400:
             request_id = response.headers.get("x-request-id")
             message = (
@@ -108,7 +105,6 @@ class AlibabaClient(OrderMethods, ProductMethods, ShippingMethods, AuthMethods):
             message = data.get("message", "")
             sub_code = data.get("sub_code")
 
-            # Use known error messages if available
             if not message:
                 message = get_error_message(sub_code or code)
 
@@ -149,14 +145,11 @@ class AlibabaClient(OrderMethods, ProductMethods, ShippingMethods, AuthMethods):
         if params is None:
             params = {}
 
-        # Validate api_path
         if not api_path.startswith("/"):
             raise AlibabaValidationError(f"api_path must start with '/', got: {api_path}")
 
-        # Use provided access_token or fall back to config
         token = access_token or self.config.access_token
 
-        # Build signed parameters
         signed_params = build_signed_params(
             api_path=api_path,
             params=params,
@@ -165,10 +158,8 @@ class AlibabaClient(OrderMethods, ProductMethods, ShippingMethods, AuthMethods):
             access_token=token,
         )
 
-        # Build URL
         url = self._build_url(api_path)
 
-        # Make request
         try:
             if method.upper() == "GET":
                 response = self._client.get(url, params=signed_params)
@@ -222,13 +213,10 @@ class AlibabaClient(OrderMethods, ProductMethods, ShippingMethods, AuthMethods):
         return self.request(api_path, params, "POST", access_token=access_token)
 
     def close(self) -> None:
-        """Close the HTTP client."""
         self._client.close()
 
     def __enter__(self) -> "AlibabaClient":
-        """Context manager entry."""
         return self
 
     def __exit__(self, *args: Any) -> None:
-        """Context manager exit."""
         self.close()

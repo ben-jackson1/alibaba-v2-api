@@ -17,7 +17,6 @@ class ShippingMethods:
         api_path: str,
         params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """Make a shipping-related API request using the base client."""
         return self.get(api_path, params)
 
     # pylint: disable=too-many-arguments
@@ -58,7 +57,6 @@ class ShippingMethods:
         """
         fallback_locations = ["CN", "US", "MX"]
 
-        # Determine which locations to try
         if dispatch_location in fallback_locations:
             start_index = fallback_locations.index(dispatch_location)
             locations_to_try = fallback_locations[start_index:]
@@ -152,7 +150,6 @@ class ShippingMethods:
                 }],
             )
         """
-        # Parse inputs
         address_obj = json.loads(address) if isinstance(address, str) else address
         products_obj = (
             json.loads(logistics_product_list)

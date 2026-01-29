@@ -6,6 +6,13 @@ __pycache__/
 # C extensions
 *.so
 
+# AI
+.claude
+specs
+
+# Cache
+.ruff_cache
+
 # Distribution / packaging
 .Python
 build/

@@ -17,7 +17,6 @@ class OrderMethods:
         params: dict[str, str] | None = None,
         method: str = "GET",
     ) -> dict[str, Any]:
-        """Make an order-related API request using the base client."""
         if method.upper() == "GET":
             return self.get(api_path, params)
         return self.post(api_path, params)

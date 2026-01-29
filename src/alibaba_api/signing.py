@@ -77,21 +77,17 @@ def build_signed_params(
     """
     import time
 
-    # Build system parameters
     system_params: dict[str, str] = {
         "app_key": app_key,
         "sign_method": "sha256",
         "timestamp": str(int(time.time() * 1000)),  # Milliseconds
     }
 
-    # Add access_token if provided
     if access_token:
         system_params["access_token"] = access_token
 
-    # Merge with business parameters
     all_params = {**system_params, **params}
 
-    # Generate and add signature
     all_params["sign"] = calculate_signature(api_path, all_params, app_secret)
 
     return all_params

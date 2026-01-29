@@ -67,7 +67,6 @@ class Config:
 
     @property
     def base_url(self) -> str:
-        """Get the base URL for API requests."""
         if self.use_sandbox:
             return "https://openapi-api-sandbox.alibaba.com/rest"
         return "https://openapi-api.alibaba.com/rest"

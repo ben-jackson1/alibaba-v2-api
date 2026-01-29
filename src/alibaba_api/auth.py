@@ -16,7 +16,6 @@ class AuthMethods:
         api_path: str,
         params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """Make an auth-related API request using the base client."""
         return self.get(api_path, params)
 
     def create_token(
@@ -70,7 +69,6 @@ class AuthMethods:
             # or with specific token:
             tokens = client.refresh_token(refresh_token="your_token")
         """
-        # Use provided token or fall back to config
         token = refresh_token or self.config.refresh_token
         if not token:
             raise ValueError(

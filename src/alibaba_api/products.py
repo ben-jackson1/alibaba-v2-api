@@ -17,7 +17,6 @@ class ProductMethods:
         api_path: str,
         params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        """Make a product-related API request using the base client."""
         return self.get(api_path, params)
 
     def list_products(

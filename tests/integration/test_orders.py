@@ -153,28 +153,36 @@ class TestOrderAPI:
         Creates an order but does NOT pay for it.
         The order will be in pending payment status.
         """
-        # Use a product we know has valid SKUs
-        product_id = "1601206892606"
+        # Use product from environment or fallback to known product
+        product_id = test_product_ids.get("product_id", "1601206892606")
+        sku_id = test_product_ids.get("sku_id", "")
 
-        # Step 1: Get product description to find SKU
-        product = client.get_product(product_id=product_id, country="US")
-        skus = product.get("skus", [])
-        if not skus:
-            pytest.skip("No SKUs found for test product")
-
-        # Find a valid SKU (not None or -1)
-        sku_id = None
-        for sku in skus:
-            sid = sku.get("sku_id")
-            if sid and sid != "-1":
-                sku_id = sid
-                break
-
+        # If SKU not provided, fetch product to find one
         if not sku_id:
-            pytest.skip("No valid SKU found for test product")
+            product = client.get_product(product_id=product_id, country="US")
+            skus = product.get("skus", [])
+            if not skus:
+                pytest.skip("No SKUs found for test product")
+
+            # Find a valid SKU (not None or -1)
+            for sku in skus:
+                sid = str(sku.get("sku_id", ""))
+                if sid and sid != "-1":
+                    sku_id = sid
+                    break
+
+            if not sku_id:
+                pytest.skip("No valid SKU found for test product")
 
         # Step 2: Build order data
         product_list = [{"product_id": product_id, "sku_id": sku_id, "quantity": "1"}]
+
+        # Get product to determine correct dispatch location
+        product_info = client.get_product(product_id=product_id, country="US")
+
+        # Use US dispatch location for overseas/US products, CN for China products
+        dispatch_location = "US"
+        carrier_code = "seller_oversea_distributor_usps"
 
         logistics_detail = {
             "shipment_address": {
@@ -188,8 +196,8 @@ class TestOrderAPI:
                 "contact_person": "Test Buyer",
                 "telephone": {"country": "+1", "number": "5551234567"},
             },
-            "dispatch_location": "CN",
-            "carrier_code": "EX_ASP_JYC_FEDEX",
+            "dispatch_location": dispatch_location,
+            "carrier_code": carrier_code,
         }
 
         import time
